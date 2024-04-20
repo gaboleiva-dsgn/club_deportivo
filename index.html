@@ -102,7 +102,7 @@
   }
 
   function eliminar(nombre) {
-    axios.get(`/eliminar?nombre=${nombre}`).then((data) => {
+    axios.get(`/eliminar/${nombre}`).then((data) => {
       alert(data.data)
       getData()
     })

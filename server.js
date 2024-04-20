@@ -6,6 +6,14 @@ const app = express();
 const PORT = 3000;
 app.listen(3000, () => console.log("Servidor escuchando por Puerto: " + PORT));
 const _ = require("lodash");
+//Middleware
+app.use(express.json());
+app.use(express.static("index.html"));
+
+// Ruta raiz
+app.get("/", (req, res) => {
+  res.sendFile(__dirname + "/index.html");
+});
 app.use(express.json());
 
 app.get("/agregar", (req, res) => {
@@ -65,7 +73,7 @@ app.get("/deportes", (req, res) => {
             error: "Error interno del servidor",
         });
     }
-    //usar lodash para ordenar el archivo json por la consola
+    //usar lodash para ordenar el archivo json 
     deportes = _.orderBy(deportes, ["nombre"], ["asc"]);
 
 
@@ -77,7 +85,7 @@ app.get("/deportes", (req, res) => {
 app.get("/modificar", (req, res) => {
     const { nombre, precio } = req.query;
 
-    // Verificar el nombre y precio
+    // Validamos que nos envían el nombre y precio
     if (!nombre || !precio) {
         return res.send(
             "Ingrese nombre del deporte para editar su valor, o todos los parámetros correspondientes"
@@ -102,9 +110,8 @@ app.get("/modificar", (req, res) => {
         if (index === -1) {
             return res.send("No existe ningún deporte con ese nombre");
         }
-        deportes[index].precio = parseFloat(precio); // Convertir el precio a número
+        deportes[index].precio = parseFloat(precio);
         fs.writeFile("deportes.json", JSON.stringify(deportes), (err) => {
-            //guarda el valor
             if (err) {
                 console.error(err);
                 return res.status(500).send("Error interno del servidor");

@@ -1,61 +1,66 @@
 const fs = require("fs");
-
 const express = require('express');
 const app = express();
-
 const PORT = 3000;
-app.listen(3000, () => console.log("Servidor escuchando por Puerto: " + PORT));
-const _ = require("lodash");
-//Middleware
-app.use(express.json());
-app.use(express.static("index.html"));
 
-// Ruta raiz
+// Middleware para parsear JSON
+app.use(express.json());
+
+// Servir archivos estáticos desde la carpeta 'public'
+app.use(express.static("public"));
+
+app.listen(PORT, () => console.log("Servidor escuchando por Puerto: " + PORT));
+
+// Ruta raíz
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
 });
-app.use(express.json());
 
 app.get("/agregar", (req, res) => {
-
     const { nombre, precio } = req.query;
 
-    if (!nombre || !precio || isNaN(parseFloat(precio))) {
+    if (!nombre || !precio) {
         return res.status(400).json({
-            error: "Ups! se requiere nombre y precio"
+            error: "Se requiere nombre y precio como parámetros"
         });
     }
 
-    // Validamos si existe el archivo JSON deportes.json, si no lo creamos con un arreglo vacio
-    if (!fs.existsSync("deportes.json")) {
-        fs.writeFileSync("deportes.json", "[]", "utf8");
+    const precioFloat = parseFloat(precio);
+    if (isNaN(precioFloat)) {
+        return res.status(400).json({
+            error: "El precio debe ser un número válido"
+        });
     }
 
-    // Leer el archivo JSON de deportes
-    let archivoDeportes = [];
+    if (!fs.existsSync("deportes.json")) {
+        fs.writeFileSync("deportes.json", JSON.stringify([]), "utf8"); // Asegúrate de escribir un array vacío
+    }
 
+    let archivoDeportes = [];
     try {
         archivoDeportes = JSON.parse(fs.readFileSync("deportes.json", "utf8"));
+        if (!Array.isArray(archivoDeportes)) { // Verifica que sea realmente un array
+            archivoDeportes = [];
+        }
     } catch (error) {
         console.error("Error al leer el archivo deportes.json: ", error.message);
         return res.status(500).json({
             error: "No se puede leer el archivo JSON desde el servidor",
         });
     }
-    console.log(`archivoDeportes es: ${archivoDeportes}`)
-    if (archivoDeportes.find((deporte) => deporte.nombre === nombre)) {
+
+    if (archivoDeportes.find(deporte => deporte.nombre === nombre)) {
         return res.status(400).json({
             error: "Ya existe un deporte con ese nombre",
         });
     } else {
-        archivoDeportes.push({ nombre: nombre, precio: precio });
-        fs.writeFileSync("deportes.json", JSON.stringify({ deportes }));
-        res.send('Deporte creado con exito');
+        archivoDeportes.push({ nombre, precio: precioFloat });
+        fs.writeFileSync("deportes.json", JSON.stringify(archivoDeportes));
+        res.send('Deporte creado con éxito');
     }
-
 });
 
-
+// se crea ruta para listar todos los deportes
 app.get("/deportes", (req, res) => {
     // Verificar si el archivo JSON de deportes existe
     if (!fs.existsSync("deportes.json")) {
@@ -65,6 +70,7 @@ app.get("/deportes", (req, res) => {
 
     // Leer el archivo JSON de deportes
     let deportes = [];
+    // Leer el archivo JSON de deportes
     try {
         deportes = JSON.parse(fs.readFileSync("deportes.json", "utf8"));
     } catch (error) {
